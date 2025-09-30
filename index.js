@@ -49,3 +49,49 @@ async function showFile() {
   }
 }
 showFile();
+
+// Q:3 = Code (Promises):
+asyncOperation()
+  .then(result => doNext(result))
+  .catch(err => {
+    console.error('Failed:', err);
+  });
+
+  // Code (async/await + express error middleware):
+  app.get('/user/:id', async (req, res, next) => {
+  try {
+    const user = await db.getUser(req.params.id);
+    if (!user) return res.status(404).send('Not found');
+    res.json(user);
+  } catch (err) {
+    next(err); // forwarded to error middleware
+  }
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// Q:4 = Code (file stream basic):
+const fs = require('fs');
+
+const read = fs.createReadStream('bigfile.txt', { encoding: 'utf8' });
+const write = fs.createWriteStream('out.txt');
+
+read.pipe(write);
+
+read.on('error', console.error);
+write.on('error', console.error);
+
+// Code (Transform variation — uppercase):
+const { Transform } = require('stream');
+
+const upper = new Transform({
+  transform(chunk, encoding, callback) {
+    this.push(chunk.toString().toUpperCase());
+    callback();
+  }
+});
+
+process.stdin.pipe(upper).pipe(process.stdout);
