@@ -95,3 +95,34 @@ const upper = new Transform({
 });
 
 process.stdin.pipe(upper).pipe(process.stdout);
+
+// Q:5 = Code (cluster basic):
+const cluster = require('cluster');
+const http = require('http');
+const numCPUs = require('os').cpus().length;
+
+if (cluster.isMaster) {
+  for (let i=0;i<numCPUs;i++) cluster.fork();
+  cluster.on('exit', (worker) => console.log('Worker died', worker.id));
+} else {
+  http.createServer((req,res) => res.end('ok')).listen(3000);
+}
+
+// Q:6 = Code (Express example):
+app.get('/v1/users', async (req, res) => {
+  const users = await db.listUsers({ page: req.query.page || 1 });
+  res.json(users);
+});
+
+// Q: 7 = Code (JWT sign/verify):
+const jwt = require('jsonwebtoken');
+const secret = process.env.JWT_SECRET;
+
+const token = jwt.sign({ userId: 123 }, secret, { expiresIn: '1h' });
+
+try {
+  const payload = jwt.verify(token, secret);
+  console.log(payload.userId);
+} catch (err) {
+  console.error('Invalid token');
+}
