@@ -150,3 +150,15 @@ async function transfer(fromId, toId, amount) {
 const user = await prisma.user.findUnique({ where: { id: 1 }, include: { posts: true } });
 // Code (raw SQL with pg):
 const res = await pool.query('SELECT u.*, COUNT(p.*) AS post_count FROM users u LEFT JOIN posts p ON p.user_id = u.id WHERE u.id = $1 GROUP BY u.id', [id]);
+
+// Q:10  Code (cache-aside with Redis):
+const redis = require('redis');
+const client = redis.createClient();
+
+async function getUser(id) {
+  const cached = await client.get(`user:${id}`);
+  if (cached) return JSON.parse(cached);
+  const user = await db.getUser(id);
+  await client.setEx(`user:${id}`, 3600, JSON.stringify(user));
+  return user;
+}
