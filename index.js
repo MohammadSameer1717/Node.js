@@ -114,7 +114,7 @@ app.get('/v1/users', async (req, res) => {
   res.json(users);
 });
 
-// Q: 7 = Code (JWT sign/verify):
+// Q:7 = Code (JWT sign/verify):
 const jwt = require('jsonwebtoken');
 const secret = process.env.JWT_SECRET;
 
@@ -126,3 +126,27 @@ try {
 } catch (err) {
   console.error('Invalid token');
 }
+
+// Q:8 = Code (Postgres with node-postgres):
+const { Pool } = require('pg');
+const pool = new Pool();
+
+async function transfer(fromId, toId, amount) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [amount, fromId]);
+    await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [amount, toId]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// = Code (Prisma example):
+const user = await prisma.user.findUnique({ where: { id: 1 }, include: { posts: true } });
+// Code (raw SQL with pg):
+const res = await pool.query('SELECT u.*, COUNT(p.*) AS post_count FROM users u LEFT JOIN posts p ON p.user_id = u.id WHERE u.id = $1 GROUP BY u.id', [id]);
