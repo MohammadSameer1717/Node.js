@@ -162,3 +162,22 @@ async function getUser(id) {
   await client.setEx(`user:${id}`, 3600, JSON.stringify(user));
   return user;
 }
+
+// Q:11 = Code (pino minimal):
+const pino = require('pino');
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+
+logger.info({ reqId: 'abc123', userId: 12 }, 'User fetched profile');
+logger.error({ err: err }, 'Failed to update');
+
+
+// Q:12 = Code (Express + rate-limit using Redis store):
+const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
+const limiter = rateLimit({
+  store: new RedisStore({ sendCommand: (...args)=>redisClient.sendCommand(args) }),
+  windowMs: 60*1000,
+  max: 100, // per window per IP
+  handler: (req,res)=> res.status(429).json({ error: 'Too many requests' })
+});
+app.use(limiter);
