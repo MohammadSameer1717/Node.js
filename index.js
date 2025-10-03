@@ -181,3 +181,26 @@ const limiter = rateLimit({
   handler: (req,res)=> res.status(429).json({ error: 'Too many requests' })
 });
 app.use(limiter);
+
+// Q13: =Code (Express + multer basic):
+const express = require('express');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/', limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
+
+const app = express();
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ filename: req.file.filename, original: req.file.originalname });
+});
+
+// Code (variation: stream upload directly to AWS S3 using aws-sdk v3):
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const s3 = new S3Client({});
+app.post('/upload-s3', (req, res) => {
+  const key = `uploads/${Date.now()}-${req.headers['x-file-name']}`;
+  const uploadParams = { Bucket: 'my-bucket', Key: key, Body: req };
+  s3.send(new PutObjectCommand(uploadParams))
+    .then(() => res.json({ key }))
+    .catch(err => res.status(500).json({ error: err.message }));
+});
+// Note: this expects the client to stream raw body; requires proper content-type handling.
+
